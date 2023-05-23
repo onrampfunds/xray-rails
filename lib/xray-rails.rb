@@ -33,7 +33,7 @@ module Xray
   #     ...
   #   </div>
   #   <!-- XRAY END 123 -->
-  def self.augment_template(source, path)
+  def self.augment_template(source, path, template_type="RENDER")
     id = next_id
     if source.include?('<!DOCTYPE')
       return source
@@ -42,7 +42,7 @@ module Xray
     if path =~ /\.(skim|hamlc)(\.|$)/
       augmented = "/!XRAY START #{id} #{path}\n#{source}\n/!XRAY END #{id}"
     else
-      augmented = "<!--XRAY START #{id} #{path}-->\n#{source}\n<!--XRAY END #{id}-->"
+      augmented = "<!--XRAY START #{template_type} #{id} #{path}-->\n#{source}\n<!--XRAY END #{id}-->"
     end
     ActiveSupport::SafeBuffer === source ? ActiveSupport::SafeBuffer.new(augmented) : augmented
   end

@@ -1,5 +1,4 @@
 module Xray
-
   # This is the main point of integration with Rails. This engine hooks into
   # Sprockets and monkey patches ActionView in order to augment the app's JS
   # and HTML templates with filepath information that can be used by xray.js
@@ -34,12 +33,34 @@ module Xray
           options = args.last.kind_of?(Hash) ? args.last : {}
 
           if source && suitable_template && !(options.has_key?(:xray) && (options[:xray] == false))
-            Xray.augment_template(source, path)
+            Xray.augment_template(source, path, "RENDER")
           else
             source
           end
         end
         xray_method_alias :render
+      end
+
+      Turbo::FramesHelper.class_eval do
+        extend Xray::Aliasing
+
+        def turbo_frame_tag_with_xray(*args, **kwargs, &block)
+          path = @current_template.identifier
+          source = turbo_frame_tag_without_xray(*args, **kwargs, &block)
+
+          suitable_template = !path.include?('_xray_bar') &&
+                              path =~ /\.(html|slim|haml|hamlc)(\.|$)/ &&
+                              path !~ /\.(js|json|css)(\.|$)/
+
+          options = args.last.kind_of?(Hash) ? args.last : {}
+
+          if source && suitable_template && !(options.has_key?(:xray) && (options[:xray] == false))
+            Xray.augment_template(source, path, "FRAME")
+          else
+            source
+          end
+        end
+        xray_method_alias :turbo_frame_tag
       end
 
       # Sprockets preprocessor interface which supports all versions of Sprockets.
